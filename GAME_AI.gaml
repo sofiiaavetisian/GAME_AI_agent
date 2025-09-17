@@ -159,6 +159,64 @@ species player parent: game_object {
     }
 }
 
+species ai_player parent: game_object {
+	float ai_step <- base_speed;          // base movement rate
+	float margin   <- 1.0;                // keep a small margin from the midline
+
+	init {
+		// Place AI on its half: even(id) => left; odd(id) => right (same convention used elsewhere)
+		if (even(id)) { self.location <- {grid_width / 4, grid_height / 2, 0}; }
+		else          { self.location <- {3 * grid_width / 4, grid_height / 2, 0}; }
+	}
+
+	// Simple, human‑like policy: track the puck's y, defend when the puck is away,
+	// advance to intercept when the puck is on our half. Move at ~puck speed.
+	reflex play when: game_start and every(0.1#s) {
+		puck pk <- one_of(puck);
+
+		// mirror current puck speed (keeps AI "not very fast but not too slow")
+		ai_step <- pk.speed;
+
+		float half <- grid_width / 2.0;
+		bool my_left <- even(id);
+
+		point target;
+		float defend_x <- my_left ? (0 + 6.0) : (grid_width - 6.0); // stay just inside our goal area
+
+		if ( (my_left and pk.location.x <= half) or (!my_left and pk.location.x >= half) ) {
+			// puck on our side: try to meet it slightly from behind to "push" it away
+			float chase_x <- pk.location.x + (my_left ? 1.5 : -1.5);
+			target <- {chase_x, pk.location.y, 0};
+		} else {
+			// puck on the other side: hold a defensive line aligned with puck's y
+			target <- {defend_x, pk.location.y, 0};
+		}
+
+		// clamp target to our side & field bounds
+		if (my_left) { target.x <- min(target.x, half - margin); }
+		else         { target.x <- max(target.x, half + margin); }
+		target.y <- max(0.0, min(grid_height, target.y));
+
+		// step toward target with capped speed
+		float dx <- target.x - self.location.x;
+		float dy <- target.y - self.location.y;
+		float d  <- sqrt(dx*dx + dy*dy);
+		if (d > 0.0) {
+			float ux <- dx / d;
+			float uy <- dy / d;
+			float step <- min(ai_step, d);
+			point np <- { self.location.x + ux * step, self.location.y + uy * step, 0 };
+			if (is_within_grid(np) and is_within_side(np)) { self.location <- np; }
+		}
+	}
+
+	// draw like a real player (with the same visual offset behavior)
+	aspect player {
+		point offset <- calculate_offset();
+		draw circle(size) at: (self.location + offset) color: color rotate: rot anchor: #center;
+	}
+}
+
 species puck parent: game_object {
 	rgb color <- #blue;
 
