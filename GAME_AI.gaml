@@ -1,6 +1,6 @@
 /**
-* Name: hockey
-* Air Hockey Game
+* Name: ai hockey
+* Air Hockey Game 
 * Author: sofiiaavetisian
 */
 
@@ -138,73 +138,90 @@ species game_object parallel: true skills: [moving, network] {
 // HUMAN PLAYER ALWAYS ON TEH RIGHT SIDE
 species player parent: game_object {
     float rotation_accumulator <- 0.0;
-    
+
+    init {
+        self.location <- {3 * grid_width / 4, grid_height / 2, 0};
+    }
+
+    bool is_within_side(point pos) {
+        return pos.x >= grid_width / 2;
+    }
+
     reflex fetch when: has_more_message() {
         loop while: has_more_message() {
             message msg <- fetch_message();
             list<string> coords <- msg.contents regex_matches("[-+]?\\d*\\.?\\d+");
-            
+
             target_location <- {float(coords[1]) + correction.y, float(coords[0]) - correction.x, 0};
-            
+
             float current_rotation <- float(coords[3]) * -100;
             rotation_accumulator <- rotation_accumulator + abs(current_rotation - rot);
-            rot <- current_rotation;       
-            
+            rot <- current_rotation;
+
             if (is_within_grid(target_location) and is_within_side(target_location)) {
                 self.location <- target_location;
-            } 
+            }
         }
     }
-    
+
     reflex reset when: !game_start {
         if (!game_start and (self.location distance_to reset_trigger_spot1 <= 3.0 or self.location distance_to reset_trigger_spot2 <= 3.0)) {
-           if (rotation_accumulator >= full_rotation_threshold) {
-                 do reset_game;
-                 rotation_accumulator <- 0.0;
-           }
-        } else {
+            if (rotation_accumulator >= full_rotation_threshold) {
+                do reset_game;
                 rotation_accumulator <- 0.0;
-       }
+            }
+        } else {
+            rotation_accumulator <- 0.0;
+        }
     }
 }
-
 
 species ai_player parent: game_object {
     float ai_step <- base_speed;
     float margin  <- 1.0;
 
     init {
-        self.location <- {3*grid_width / 4, grid_height / 2, 0};
+        
+        //LEFT SIDE OF THE FIELD
+        self.location <- {grid_width / 4, grid_height / 2, 0};
+        self.name <- "AI";
+        self.color <- #blue;
+    }
+
+    bool is_within_side(point pos) {
+        return pos.x <= grid_width / 2;
     }
 
     reflex play when: game_start and every(0.1#s) {
         puck pk <- one_of(puck);
 
         float half <- grid_width / 2.0;
-        bool my_left <- even(id); // AI is odd → always false (right side)
 
         point target;
-        float defend_x <- grid_width - 6.0;
+        float defend_x <- 6.0;
 
-        if (pk.location.x >= half) {
-            float chase_x <- pk.location.x - 1.5;
+        if (pk.location.x <= half) {
+            float chase_x <- pk.location.x + 1.5;
             target <- {chase_x, pk.location.y, 0};
         } else {
             target <- {defend_x, pk.location.y, 0};
         }
 
-        target.x <- max(target.x, half + margin);
+        target.x <- min(target.x, half - margin);
         target.y <- max(0.0, min(grid_height, target.y));
 
         float dx <- target.x - self.location.x;
         float dy <- target.y - self.location.y;
         float d  <- sqrt(dx*dx + dy*dy);
+
         if (d > 0.0) {
             float ux <- dx / d;
             float uy <- dy / d;
             float step <- min(ai_step, d);
             point np <- { self.location.x + ux * step, self.location.y + uy * step, 0 };
-            if (is_within_grid(np) and is_within_side(np)) { self.location <- np; }
+            if (is_within_grid(np) and is_within_side(np)) { 
+                self.location <- np; 
+            }
         }
     }
 
