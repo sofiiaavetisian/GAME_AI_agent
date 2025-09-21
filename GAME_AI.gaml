@@ -396,16 +396,18 @@ experiment Main parent: hockey type: gui {
                     draw "Move to the squares and spin to start playing!" at: {(grid_width / 2), (grid_height / 2) - 15} font:font("Arial", 25, #bold) color:#green anchor: #center;
                 }
                 if (!game_start) {
-                    if (p1_score >= win_score) {
-                        draw "Player 1 Wins!" at: {(grid_width / 2), (grid_height / 2) - 15} font:font("Arial", 35, #bold) color:#red anchor: #center;
-                    } else if (p2_score >= win_score) {
-                        draw "Player 2 Wins!" at: {(grid_width / 2), (grid_height / 2) - 15} font:font("Arial", 35, #bold) color:#blue anchor: #center;
-                    }
-                    draw square(10) at: reset_trigger_spot1 color: #black anchor: #center;
-                    draw "Start" at: reset_trigger_spot1 font:font("Arial", 25, #bold) color: #white anchor: #center;
-                    draw square(10) at: reset_trigger_spot2 color: #black anchor: #center;
-                    draw "Start" at: reset_trigger_spot2 font:font("Arial", 25, #bold) color: #white anchor: #center;
-                }
+                    if (!game_start) {
+                        if (p1_score >= win_score) {
+                            draw "Human Wins!" at: {(grid_width / 2), (grid_height / 2) - 15} font:font("Arial", 35, #bold) color:#red anchor: #center;
+                        } else if (p2_score >= win_score) {
+                            draw "AI Wins!" at: {(grid_width / 2), (grid_height / 2) - 15} font:font("Arial", 35, #bold) color:#blue anchor: #center;
+                        }
+                        draw square(10) at: reset_trigger_spot1 color: #black anchor: #center;
+                        draw "Start" at: reset_trigger_spot1 font:font("Arial", 25, #bold) color: #white anchor: #center;
+                        draw square(10) at: reset_trigger_spot2 color: #black anchor: #center;
+                        
+                        draw "Start" at: reset_trigger_spot2 font:font("Arial", 25, #bold) color: #white anchor: #center;
+                }   
             }
             event "r" { ask player {do reset_game;} }
         }
