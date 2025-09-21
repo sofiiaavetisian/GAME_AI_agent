@@ -135,6 +135,7 @@ species game_object parallel: true skills: [moving, network] {
     }
 }
 
+// HUMAN PLAYER ALWAYS ON TEH RIGHT SIDE
 species player parent: game_object {
     float rotation_accumulator <- 0.0;
     
@@ -287,8 +288,6 @@ species puck parent: game_object {
         }
     }
 
-///////////////////
-    
     action check_goal {
         if (self.location distance_to goal1 <= 2) {
             p2_score <- p2_score + 1;
